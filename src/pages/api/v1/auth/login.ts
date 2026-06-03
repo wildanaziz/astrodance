@@ -3,6 +3,7 @@ import { AuthService } from '../../../../modules/auth/application/authService';
 import { UserRepository } from '../../../../modules/auth/infrastructure/userRepository';
 import { AppError } from '../../../../shared/utils/errors';
 import { rateLimiter } from '../../../../shared/middleware/rateLimiter';
+import { env } from '../../../../shared/config/env';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -14,19 +15,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const service = new AuthService(new UserRepository());
     const { user, token } = await service.login(body);
 
-    cookies.set('session', token, {
+    const cookieOpts = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: env.COOKIE_SECURE,
+      sameSite: 'lax' as const,
       maxAge: 60 * 60 * 8,
       path: '/'
-    });
+    };
+
+    cookies.set('session', token, cookieOpts);
 
     const csrfToken = crypto.randomUUID();
-    cookies.set('csrf', csrfToken, { httpOnly: false, secure: true, sameSite: 'strict', maxAge: 60 * 60 * 8, path: '/' });
+    cookies.set('csrf', csrfToken, { httpOnly: false, secure: env.COOKIE_SECURE, sameSite: 'lax', maxAge: 60 * 60 * 8, path: '/' });
 
     const expiryMs = Date.now() + (8 * 60 * 60 * 1000);
-    cookies.set('session_expires_at', String(expiryMs), { httpOnly: false, secure: true, sameSite: 'strict', maxAge: 60 * 60 * 8, path: '/' });
+    cookies.set('session_expires_at', String(expiryMs), { httpOnly: false, secure: env.COOKIE_SECURE, sameSite: 'lax', maxAge: 60 * 60 * 8, path: '/' });
 
     return new Response(JSON.stringify({
       success: true,
