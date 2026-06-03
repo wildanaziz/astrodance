@@ -133,31 +133,31 @@ src/
 ```mermaid
 flowchart TD
     %% Entitas Eksternal
-    Client("💻 Client Browser<br/>(Desktop/Mobile)")
+    Client("Client Browser<br/>(Desktop/Mobile)")
 
     %% Batas Cloud / VPC
-    subgraph VPC ["☁️ AWS Virtual Private Cloud (VPC)"]
+    subgraph VPC ["AWS Virtual Private Cloud (VPC)"]
         direction TB
         
         %% Public Subnet Area
-        subgraph PublicSubnet ["🔓 Public Subnet"]
+        subgraph PublicSubnet ["Public Subnet"]
             direction TB
-            subgraph EC2 ["🖥️ Amazon EC2"]
-                subgraph Docker ["🐳 Docker Environment"]
-                    App("🚀 Astro + Bun Runtime")
+            subgraph EC2 ["Amazon EC2"]
+                subgraph Docker ["Docker Environment"]
+                    App("Astro + Bun Runtime")
                 end
             end
         end
 
         %% Private Subnet Area
-        subgraph PrivateSubnet ["🔒 Private Subnet"]
+        subgraph PrivateSubnet ["Private Subnet"]
             direction TB
-            RDS[("🗄️ AWS RDS<br/>(PostgreSQL)")]
+            RDS[("AWS RDS<br/>(PostgreSQL)")]
         end
 
         %% AWS Managed Services
-        KMS("🔑 AWS KMS<br/>(Key Management)")
-        CW("📈 AWS CloudWatch<br/>(Logs & Monitoring)")
+        KMS("AWS KMS<br/>(Key Management)")
+        CW("AWS CloudWatch<br/>(Logs & Monitoring)")
     end
 
     %% Relasi dan Jalur Komunikasi
@@ -186,27 +186,27 @@ flowchart TD
 ```mermaid
 graph TD
     %% Titik Awal Request
-    Start([🌐 Client Request HTTPS<br/>brain.pastipintar.id/api])
+    Start([Client Request HTTPS<br/>attendance.id/api])
 
     %% Server
-    Astro[🚀 Astro Server <br/> Bun Runtime]
+    Astro[Astro Server <br/> Bun Runtime]
     
     %% Alur Lapisan Arsitektur
-    subgraph Middlewares ["🛡️ Middleware Layer"]
+    subgraph Middlewares ["Middleware Layer"]
         direction TB
         Auth[Auth Guard] --> CSRF[CSRF Check] --> Rate[Rate Limiter]
     end
     
-    Pres["🖥️ Presentation Layer <br/> (Route Handler / API Endpoint)"]
-    App["⚙️ Application Layer <br/> (Use Case / Service)"]
-    Dom["🧠 Domain Layer <br/> (Business Rules & Validation)"]
+    Pres["Presentation Layer <br/> (Route Handler / API Endpoint)"]
+    App["Application Layer <br/> (Use Case / Service)"]
+    Dom["Domain Layer <br/> (Business Rules & Validation)"]
     
     subgraph InfraLayer ["🔌 Infrastructure Layer"]
         Repo[Repository] --> ORM[Drizzle ORM] --> DB[("PostgreSQL RDS")]
     end
     
     %% Titik Akhir Response
-    Resp([📄 Response <br/> JSON or HTML via SSR])
+    Resp([Response <br/> JSON or HTML via SSR])
 
     %% Relasi Alur
     Start --> Astro
