@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+
+# Build output (fresh build in Docker)
+dist
+.astro
+
+# Environment secrets
+.env
+
+# Documentation & planning
+docs
+opencode
+
+# Dev artifacts
+Session Redesain UI.md
+*.log
+*.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tests
+tests
+
+# IDE
+.vscode
+.idea
+
+# Lock files (only bun.lock is needed)
+package-lock.json
