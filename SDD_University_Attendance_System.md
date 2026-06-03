@@ -2,8 +2,7 @@
 *University Student Attendance Management System*
 
 **Version**: 1.0  
-**Date**: 2026-05-30  
-**Based on**: SRS v1.0 — University Student Attendance Management System
+**Date**: 2026-05-30
 
 ---
 
@@ -131,62 +130,99 @@ src/
 
 ### 3.3 High-Level System Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         AWS VPC                             │
-│                                                             │
-│  ┌──────────────┐        ┌──────────────────────────────┐  │
-│  │   Public      │        │        Private Subnet        │  │
-│  │   Subnet      │        │                              │  │
-│  │               │        │  ┌────────────────────────┐  │  │
-│  │  ┌─────────┐  │  ──►   │  │   AWS RDS (PostgreSQL)  │  │  │
-│  │  │  EC2    │  │        │  └────────────────────────┘  │  │
-│  │  │ Docker  │  │        │                              │  │
-│  │  │ Astro + │  │        └──────────────────────────────┘  │
-│  │  │  Bun   │  │                                           │
-│  │  └────┬────┘  │        ┌──────────────────────────────┐  │
-│  │       │       │        │   AWS KMS (Key Management)   │  │
-│  └───────┼───────┘        └──────────────────────────────┘  │
-│          │                                                   │
-│          │                ┌──────────────────────────────┐  │
-│          └──────────────► │   AWS CloudWatch (Logs &     │  │
-│                           │   Monitoring)                │  │
-│                           └──────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-          ▲
-          │ HTTPS (TLS/SSL)
-          │
-┌─────────┴──────────┐
-│   Client Browser   │
-│  (Desktop/Mobile)  │
-└────────────────────┘
+```mermaid
+flowchart TD
+    %% Entitas Eksternal
+    Client("💻 Client Browser<br/>(Desktop/Mobile)")
+
+    %% Batas Cloud / VPC
+    subgraph VPC ["☁️ AWS Virtual Private Cloud (VPC)"]
+        direction TB
+        
+        %% Public Subnet Area
+        subgraph PublicSubnet ["🔓 Public Subnet"]
+            direction TB
+            subgraph EC2 ["🖥️ Amazon EC2"]
+                subgraph Docker ["🐳 Docker Environment"]
+                    App("🚀 Astro + Bun Runtime")
+                end
+            end
+        end
+
+        %% Private Subnet Area
+        subgraph PrivateSubnet ["🔒 Private Subnet"]
+            direction TB
+            RDS[("🗄️ AWS RDS<br/>(PostgreSQL)")]
+        end
+
+        %% AWS Managed Services
+        KMS("🔑 AWS KMS<br/>(Key Management)")
+        CW("📈 AWS CloudWatch<br/>(Logs & Monitoring)")
+    end
+
+    %% Relasi dan Jalur Komunikasi
+    Client == "HTTPS (TLS/SSL)" ==> App
+    
+    App ==>|"Read/Write Data"| RDS
+    App -.->|"Encrypt/Decrypt"| KMS
+    App -.->|"Send Logs/Metrics"| CW
+
+    %% Pengaturan Gaya Tampilan Khusus
+    classDef external fill:#f4f4f4,stroke:#333,stroke-width:2px,color:#333;
+    classDef awsVpc fill:none,stroke:#FF9900,stroke-width:3px,stroke-dasharray: 5 5;
+    classDef public fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000;
+    classDef private fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000;
+    classDef db fill:#ffffff,stroke:#336699,stroke-width:2px,color:#333;
+    
+    class Client external;
+    class VPC awsVpc;
+    class PublicSubnet public;
+    class PrivateSubnet private;
+    class RDS db;
 ```
 
 ### 3.4 Request Lifecycle
 
-```
-Client Request (HTTPS)
-        │
-        ▼
-Astro Server (Bun Runtime)
-        │
-        ▼
-Middleware Layer (Auth Guard → CSRF Check → Rate Limiter)
-        │
-        ▼
-Presentation Layer (Route Handler / API Endpoint)
-        │
-        ▼
-Application Layer (Use Case / Service)
-        │
-        ▼
-Domain Layer (Business Rules & Validation)
-        │
-        ▼
-Infrastructure Layer (Repository → Drizzle ORM → PostgreSQL RDS)
-        │
-        ▼
-Response (JSON or HTML via SSR)
+```mermaid
+graph TD
+    %% Titik Awal Request
+    Start([🌐 Client Request HTTPS<br/>brain.pastipintar.id/api])
+
+    %% Server
+    Astro[🚀 Astro Server <br/> Bun Runtime]
+    
+    %% Alur Lapisan Arsitektur
+    subgraph Middlewares ["🛡️ Middleware Layer"]
+        direction TB
+        Auth[Auth Guard] --> CSRF[CSRF Check] --> Rate[Rate Limiter]
+    end
+    
+    Pres["🖥️ Presentation Layer <br/> (Route Handler / API Endpoint)"]
+    App["⚙️ Application Layer <br/> (Use Case / Service)"]
+    Dom["🧠 Domain Layer <br/> (Business Rules & Validation)"]
+    
+    subgraph InfraLayer ["🔌 Infrastructure Layer"]
+        Repo[Repository] --> ORM[Drizzle ORM] --> DB[("PostgreSQL RDS")]
+    end
+    
+    %% Titik Akhir Response
+    Resp([📄 Response <br/> JSON or HTML via SSR])
+
+    %% Relasi Alur
+    Start --> Astro
+    Astro --> Middlewares
+    Middlewares --> Pres
+    Pres --> App
+    App --> Dom
+    Dom --> InfraLayer
+    InfraLayer --> Resp
+
+    %% Pewarnaan / Styling
+    style Middlewares fill:#f4f4f4,stroke:#333,stroke-dasharray: 5 5,color:#333
+    style InfraLayer fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#333
+    style Pres fill:#f3e5f5,stroke:#8e24aa,color:#333
+    style App fill:#e8f5e9,stroke:#43a047,color:#333
+    style Dom fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#333
 ```
 
 ---
@@ -346,38 +382,57 @@ function validateSubmissionWindow(session: AttendanceSession): void {
 
 ### 5.1 Entity-Relationship Diagram
 
-```
-┌──────────────┐          ┌──────────────────┐          ┌─────────────────────┐
-│    users     │          │  student_classes  │          │      classes        │
-│─────────────-│          │──────────────────│          │─────────────────────│
-│ id (PK)      │──────┐   │ student_id (FK)  │◄─────────│ id (PK)             │
-│ nim          │      └──►│ class_id (FK)    │          │ name                │
-│ full_name    │          │ enrolled_at      │          │ description         │
-│ email        │          └──────────────────┘          │ admin_id (FK)       │
-│ password_hash│                                         │ created_at          │
-│ role         │                                         └──────────┬──────────┘
-│ created_at   │                                                    │
-└──────────────┘                                                    │
-                                                         ┌──────────▼──────────┐
-                                                         │  attendance_sessions │
-                                                         │─────────────────────│
-                                                         │ id (PK)             │
-                                                         │ class_id (FK)       │
-                                                         │ start_time          │
-                                                         │ end_time            │
-                                                         │ status              │
-                                                         │ created_at          │
-                                                         └──────────┬──────────┘
-                                                                    │
-                                                         ┌──────────▼──────────┐
-                                                         │  attendance_records  │
-                                                         │─────────────────────│
-                                                         │ id (PK)             │
-                                                         │ session_id (FK)     │
-                                                         │ student_id (FK)     │
-                                                         │ mode                │
-                                                         │ submitted_at        │
-                                                         └─────────────────────┘
+```mermaid
+erDiagram
+    %% Definisi Tabel dan Kolom
+    users {
+        uuid id PK
+        string nim
+        string full_name
+        string email
+        string password_hash
+        string role
+        timestamp created_at
+    }
+
+    classes {
+        uuid id PK
+        string name
+        string description
+        uuid admin_id FK
+        timestamp created_at
+    }
+
+    student_classes {
+        uuid student_id PK,FK
+        uuid class_id PK,FK
+        timestamp enrolled_at
+    }
+
+    attendance_sessions {
+        uuid id PK
+        uuid class_id FK
+        timestamp start_time
+        timestamp end_time
+        string status
+        timestamp created_at
+    }
+
+    attendance_records {
+        uuid id PK
+        uuid session_id FK
+        uuid student_id FK
+        string mode
+        timestamp submitted_at
+    }
+
+    %% Relasi Antar Tabel (Cardinality)
+    users ||--o{ classes : "manages (as Admin)"
+    users ||--o{ student_classes : "enrolled in"
+    classes ||--o{ student_classes : "has students"
+    classes ||--o{ attendance_sessions : "contains"
+    attendance_sessions ||--o{ attendance_records : "has"
+    users ||--o{ attendance_records : "submits"
 ```
 
 ### 5.2 Table Definitions
