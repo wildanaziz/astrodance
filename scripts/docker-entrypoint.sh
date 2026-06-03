@@ -7,11 +7,7 @@ RETRIES=0
 
 echo "Waiting for database to be ready..."
 while [ $RETRIES -lt $MAX_RETRIES ]; do
-  if node -e "
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 3000 });
-    pool.query('SELECT 1').then(() => { pool.end(); process.exit(0); }).catch(() => { pool.end(); process.exit(1); });
-  " 2>/dev/null; then
+  if bun -e "const { Pool } = require('pg'); const p = new Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 3000 }); p.query('SELECT 1').then(() => { p.end(); process.exit(0); }).catch(() => { p.end(); process.exit(1); });" 2>/dev/null; then
     echo "Database is ready!"
     break
   fi

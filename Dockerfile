@@ -19,6 +19,6 @@ RUN chmod +x /app/scripts/docker-entrypoint.sh
 EXPOSE 4321
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4321/', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"
+  CMD bun -e "fetch('http://localhost:4321/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
