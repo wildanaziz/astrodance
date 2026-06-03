@@ -1,0 +1,219 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { pageAuthGuard } from '../../shared/middleware/authGuard';
+import { ClassService } from '../../modules/class/application/classService';
+import { ClassRepository } from '../../modules/class/infrastructure/classRepository';
+
+const result = await pageAuthGuard(Astro, 'admin');
+if (result instanceof Response) return result;
+const user = result;
+const service = new ClassService(new ClassRepository());
+const list = await service.listAdminClasses(user.sub);
+---
+<Layout title="Classes" role="admin">
+  <nav class="breadcrumb anim-fade-up" aria-label="Breadcrumb">
+    <a href="/admin/dashboard">Dashboard</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <span aria-current="page">Classes</span>
+  </nav>
+
+  <div class="page-header anim-fade-up" style="animation-delay:0.05s">
+    <div>
+      <h1 class="page-title">Classes</h1>
+      <p class="page-subtitle">{list.length} class{list.length !== 1 ? 'es' : ''} created</p>
+    </div>
+    <a href="/admin/classes/new" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Class
+    </a>
+  </div>
+
+  {list.length === 0 && (
+    <div class="card empty-card anim-fade-up" style="animation-delay:0.1s">
+      <div class="empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <h3 class="empty-title">No classes yet</h3>
+      <p class="empty-desc">Create your first class to start managing sessions and student attendance.</p>
+      <a href="/admin/classes/new" class="btn btn-primary" style="margin-top:0.5rem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create Class
+      </a>
+    </div>
+  )}
+
+  {list.length > 0 && (
+    <div class="class-grid">
+      {list.map((c, i) => (
+        <a href={`/admin/classes/${c.id}`} class="class-card anim-fade-up" style={`animation-delay:${0.08 + i * 0.05}s`}>
+          <div class="class-card-body">
+            <div class="class-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            <div class="class-card-content">
+              <h3 class="class-card-title">{c.name}</h3>
+              <p class="class-card-desc">{c.description || 'No description provided'}</p>
+            </div>
+          </div>
+          <div class="class-card-footer">
+            <span class="class-card-action">
+              Open
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </div>
+        </a>
+      ))}
+    </div>
+  )}
+
+  <style>
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.8125rem;
+      color: var(--color-muted-light);
+    }
+    .breadcrumb a {
+      color: var(--color-muted);
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .breadcrumb a:hover { color: var(--color-accent); }
+    .breadcrumb svg { opacity: 0.4; }
+    .breadcrumb span[aria-current] { color: var(--color-text); font-weight: 500; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.75rem;
+      gap: 1rem;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .page-subtitle {
+      color: var(--color-muted);
+      font-size: 0.875rem;
+      margin-top: 0.3rem;
+    }
+
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+    .class-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+    .class-card:hover {
+      box-shadow: var(--shadow-lg);
+      border-color: var(--color-border-strong);
+      transform: translateY(-1px);
+    }
+    .class-card-body {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.35rem 1.5rem;
+      flex: 1;
+    }
+    .class-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      background: var(--color-accent-wash);
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .class-card-content { min-width: 0; flex: 1; }
+    .class-card-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: var(--color-text);
+      line-height: 1.3;
+      margin-bottom: 0.25rem;
+    }
+    .class-card-desc {
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .class-card-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid var(--color-border);
+      background: var(--color-bg);
+    }
+    .class-card-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-accent);
+      transition: gap 0.15s ease;
+    }
+    .class-card:hover .class-card-action { gap: 0.55rem; }
+
+    .empty-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 3.5rem 2rem;
+    }
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-lg);
+      background: var(--color-bg);
+      color: var(--color-muted-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .empty-title {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--color-text);
+      margin-bottom: 0.35rem;
+    }
+    .empty-desc {
+      font-size: 0.875rem;
+      color: var(--color-muted);
+      max-width: 360px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 640px) {
+      .class-grid { grid-template-columns: 1fr; }
+      .page-header { flex-direction: column; align-items: stretch; }
+      .page-header .btn { align-self: flex-start; }
+    }
+  </style>
+</Layout>

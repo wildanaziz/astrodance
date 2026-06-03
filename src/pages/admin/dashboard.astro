@@ -1,0 +1,209 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { pageAuthGuard } from '../../shared/middleware/authGuard';
+
+const result = await pageAuthGuard(Astro, 'admin');
+if (result instanceof Response) return result;
+---
+<Layout title="Admin Dashboard" role="admin">
+  <div class="page-header anim-fade-up">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Overview of your classes, sessions, and students</p>
+    </div>
+    <a href="/admin/classes" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      Manage Classes
+    </a>
+  </div>
+
+  // stats
+  <div class="stats-grid">
+    <div class="stat-card anim-fade-up" style="animation-delay:0.06s">
+      <div class="stat-icon stat-icon--accent">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div class="stat-body">
+        <span class="stat-value" id="statClasses">-</span>
+        <span class="stat-label">Classes</span>
+      </div>
+    </div>
+    <div class="stat-card anim-fade-up" style="animation-delay:0.12s">
+      <div class="stat-icon stat-icon--success">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="stat-body">
+        <span class="stat-value" id="statSessions">-</span>
+        <span class="stat-label">Active Sessions</span>
+      </div>
+    </div>
+    <div class="stat-card anim-fade-up" style="animation-delay:0.18s">
+      <div class="stat-icon stat-icon--warning">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="stat-body">
+        <span class="stat-value" id="statStudents">-</span>
+        <span class="stat-label">Total Students</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card section-card anim-fade-up" style="animation-delay:0.24s">
+    <div class="section-header">
+      <h2 class="section-heading">Recent Sessions</h2>
+      <a href="/admin/classes" class="btn btn-ghost btn-sm">View All</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Session</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="sessionsBody">
+          <tr><td colspan="5" class="empty-state">Loading sessions...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <style>
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      gap: 1rem;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .page-subtitle {
+      color: var(--color-muted);
+      font-size: 0.875rem;
+      margin-top: 0.3rem;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 1.25rem 1.35rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .stat-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-strong);
+    }
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-icon--accent {
+      background: var(--color-accent-wash);
+      color: var(--color-accent);
+    }
+    .stat-icon--success {
+      background: var(--color-success-wash);
+      color: var(--color-success);
+    }
+    .stat-icon--warning {
+      background: var(--color-warning-wash);
+      color: var(--color-warning);
+    }
+    .stat-body {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+    }
+    .stat-label {
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+      margin-top: 0.35rem;
+      font-weight: 500;
+    }
+    .section-card {
+      padding: 0;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .page-header { flex-direction: column; align-items: stretch; }
+      .page-header .btn { align-self: flex-start; }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+
+  <script>
+    (async () => {
+      const res = await fetch('/api/v1/admin/dashboard');
+      const json = await res.json();
+      if (!json.success) return;
+
+      const d = json.data;
+      const el = (id: string) => document.getElementById(id);
+      el('statClasses')!.textContent = String(d.totalClasses);
+      el('statSessions')!.textContent = String(d.activeSessions);
+      el('statStudents')!.textContent = String(d.totalStudents);
+
+      const tbody = el('sessionsBody')!;
+      if (d.recentSessions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No sessions yet. Create your first class to get started.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = d.recentSessions.map((s: any) => {
+        const start = new Date(s.startTime).toLocaleString();
+        const end = new Date(s.endTime).toLocaleString();
+        const badgeClass = s.status === 'active' ? 'badge badge-success' : 'badge badge-muted';
+        const sessionName = s.name || 'Session';
+        return `<tr>
+          <td><strong>${s.className}</strong></td>
+          <td>${sessionName}</td>
+          <td>${start}</td>
+          <td>${end}</td>
+          <td><span class="${badgeClass}">${s.status}</span></td>
+        </tr>`;
+      }).join('');
+    })();
+  </script>
+</Layout>

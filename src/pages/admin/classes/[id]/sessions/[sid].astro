@@ -1,0 +1,197 @@
+---
+import { inArray } from 'drizzle-orm';
+import Layout from '../../../../../layouts/Layout.astro';
+import { pageAuthGuard } from '../../../../../shared/middleware/authGuard';
+import { db } from '../../../../../shared/config/db';
+import { users } from '../../../../../shared/config/schema';
+import { AttendanceService } from '../../../../../modules/attendance/application/attendanceService';
+import { AttendanceRepository } from '../../../../../modules/attendance/infrastructure/attendanceRepository';
+
+const result = await pageAuthGuard(Astro, 'admin');
+if (result instanceof Response) return result;
+const sid = Astro.params.sid!;
+const cid = Astro.params.id!;
+const service = new AttendanceService(new AttendanceRepository());
+const records = await service.getAttendanceBySession(sid);
+
+const studentIds = [...new Set(records.map(r => r.studentId))];
+const studentUsers = studentIds.length > 0
+  ? await db.select({ id: users.id, fullName: users.fullName, nim: users.nim }).from(users).where(inArray(users.id, studentIds))
+  : [];
+const studentMap = new Map(studentUsers.map(u => [u.id, u.fullName]));
+const nimMap = new Map(studentUsers.map(u => [u.id, u.nim]));
+---
+<Layout title="Session Attendance" role="admin">
+  <nav class="breadcrumb anim-fade-up" aria-label="Breadcrumb">
+    <a href="/admin/dashboard">Dashboard</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <a href="/admin/classes">Classes</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <a href={`/admin/classes/${cid}`}>Class</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <span aria-current="page">Attendance</span>
+  </nav>
+
+  <div class="page-header anim-fade-up" style="animation-delay:0.05s">
+    <div>
+      <h1 class="page-title">Session Attendance</h1>
+      <p class="page-subtitle">{records.length} attendance record{records.length !== 1 ? 's' : ''} recorded</p>
+    </div>
+    {records.length > 0 && (
+      <a href={`/api/v1/sessions/${sid}/attendance/export`} class="btn btn-secondary" download>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </a>
+    )}
+  </div>
+
+  <div class="card section-card anim-fade-up" style="animation-delay:0.1s">
+    {records.length === 0 && (
+      <div class="empty-card">
+        <div class="empty-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h3 class="empty-title">No attendance records</h3>
+        <p class="empty-desc">No students have submitted attendance for this session yet.</p>
+      </div>
+    )}
+    {records.length > 0 && (
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>NIM</th>
+              <th>Mode</th>
+              <th>Submitted At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((r, i) => (
+              <tr class="anim-fade-up" style={`animation-delay:${0.12 + i * 0.03}s`}>
+                <td>
+                  <div class="student-cell">
+                    <div class="student-avatar" aria-hidden="true">
+                      {(studentMap.get(r.studentId) || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <strong>{studentMap.get(r.studentId) || r.studentId.slice(0,8)}</strong>
+                  </div>
+                </td>
+                <td><code class="nim-code">{nimMap.get(r.studentId) || '-'}</code></td>
+                <td>
+                  <span class="badge badge-accent" style="text-transform:capitalize">{r.mode}</span>
+                </td>
+                <td class="text-muted">{new Date(r.submittedAt).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <style>
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.8125rem;
+      color: var(--color-muted-light);
+      flex-wrap: wrap;
+    }
+    .breadcrumb a {
+      color: var(--color-muted);
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .breadcrumb a:hover { color: var(--color-accent); }
+    .breadcrumb svg { opacity: 0.4; }
+    .breadcrumb span[aria-current] { color: var(--color-text); font-weight: 500; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.75rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .page-subtitle {
+      color: var(--color-muted);
+      font-size: 0.875rem;
+      margin-top: 0.3rem;
+    }
+
+    .section-card { overflow: hidden; }
+
+    .student-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .student-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--color-accent-wash);
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .nim-code {
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--color-border);
+    }
+
+    .empty-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 3.5rem 2rem;
+    }
+    .empty-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-md);
+      background: var(--color-bg);
+      color: var(--color-muted-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .empty-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      color: var(--color-text);
+      margin-bottom: 0.3rem;
+    }
+    .empty-desc {
+      font-size: 0.875rem;
+      color: var(--color-muted);
+    }
+
+    @media (max-width: 640px) {
+      .page-header { flex-direction: column; }
+    }
+  </style>
+</Layout>

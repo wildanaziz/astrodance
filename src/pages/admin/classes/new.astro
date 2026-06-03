@@ -1,0 +1,211 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { pageAuthGuard } from '../../../shared/middleware/authGuard';
+
+const result = await pageAuthGuard(Astro, 'admin');
+if (result instanceof Response) return result;
+---
+<Layout title="New Class" role="admin">
+  <nav class="breadcrumb anim-fade-up" aria-label="Breadcrumb">
+    <a href="/admin/dashboard">Dashboard</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <a href="/admin/classes">Classes</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <span aria-current="page">New</span>
+  </nav>
+
+  <div class="form-container anim-fade-up" style="animation-delay:0.06s">
+    <div class="form-card">
+      <div class="form-header">
+        <h1 class="form-title">Create Class</h1>
+        <p class="form-desc">Set up a new class to manage sessions and track student attendance.</p>
+      </div>
+      <form id="classForm" class="form-body" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="className">Class Name</label>
+          <input type="text" id="className" name="name" class="form-input" placeholder="e.g. SDD Batch 2025" required autocomplete="off" />
+          <p class="field-error" id="nameError"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="classDesc">Description</label>
+          <input type="text" id="classDesc" name="description" class="form-input" placeholder="Brief description (optional)" autocomplete="off" />
+        </div>
+        <div class="form-actions">
+          <a href="/admin/classes" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary" id="submitBtn">Create Class</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="stateBox" class="state-box hidden" role="alert" aria-live="polite"></div>
+
+  <style>
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.8125rem;
+      color: var(--color-muted-light);
+    }
+    .breadcrumb a {
+      color: var(--color-muted);
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .breadcrumb a:hover { color: var(--color-accent); }
+    .breadcrumb svg { opacity: 0.4; }
+    .breadcrumb span[aria-current] { color: var(--color-text); font-weight: 500; }
+
+    .form-container { max-width: 520px; }
+    .form-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .form-header { padding: 1.75rem 1.75rem 0; }
+    .form-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .form-desc {
+      color: var(--color-muted);
+      font-size: 0.875rem;
+      margin-top: 0.4rem;
+      line-height: 1.5;
+    }
+    .form-body { padding: 1.5rem 1.75rem 1.75rem; }
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+    .form-actions .btn { min-width: 100px; }
+
+    .field-error {
+      color: var(--color-danger);
+      font-size: 0.75rem;
+      margin-top: 0.3rem;
+      min-height: 0;
+      transition: opacity 0.15s;
+    }
+    .field-error:empty { opacity: 0; }
+    .form-input.input-error {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 3px var(--color-danger-wash);
+    }
+
+    .state-box {
+      position: fixed;
+      top: 4.5rem;
+      right: 1.5rem;
+      z-index: 100;
+      max-width: 380px;
+      padding: 0.85rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .state-box.hidden {
+      opacity: 0;
+      transform: translateX(20px);
+      pointer-events: none;
+    }
+    .state-box.state-success {
+      background: rgba(236, 253, 245, 0.92);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #065f46;
+    }
+    .state-box.state-error {
+      background: rgba(254, 242, 242, 0.92);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--color-danger);
+    }
+    .state-box.state-warning {
+      background: rgba(255, 251, 235, 0.92);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: #92400e;
+    }
+
+    @media (max-width: 640px) {
+      .state-box { left: 1rem; right: 1rem; max-width: 100%; }
+    }
+  </style>
+
+  <script>
+    const form = document.getElementById('classForm') as HTMLFormElement;
+    const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+    const nameInput = document.getElementById('className') as HTMLInputElement;
+    const nameError = document.getElementById('nameError')!;
+    const stateBox = document.getElementById('stateBox')!;
+    let stateTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function showState(msg: string, isError = false) {
+      if (stateTimer) clearTimeout(stateTimer);
+      stateBox.textContent = msg;
+      stateBox.classList.remove('hidden', 'state-success', 'state-error', 'state-warning');
+      stateBox.classList.add(isError ? 'state-error' : 'state-success');
+      stateTimer = setTimeout(() => { stateBox.classList.add('hidden'); }, 5000);
+    }
+
+    function validateFields(): boolean {
+      nameError.textContent = '';
+      nameInput.classList.remove('input-error');
+
+      if (!nameInput.value.trim()) {
+        nameError.textContent = 'Class name is required';
+        nameInput.classList.add('input-error');
+        return false;
+      }
+      return true;
+    }
+
+    nameInput.addEventListener('input', () => {
+      nameInput.classList.remove('input-error');
+      nameError.textContent = '';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!validateFields()) {
+        nameInput.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      const originalText = submitBtn.textContent;
+      submitBtn.innerHTML = '<span class="btn-spinner"></span> Creating…';
+
+      const fd = new FormData(form);
+      const res = await fetch('/api/v1/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: fd.get('name'), description: fd.get('description') })
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        showState(data.message || 'Failed to create class.', true);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        return;
+      }
+
+      showState('Class created successfully.');
+      setTimeout(() => { window.location.href = '/admin/classes'; }, 800);
+    });
+  </script>
+</Layout>

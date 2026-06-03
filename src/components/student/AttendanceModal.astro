@@ -1,0 +1,92 @@
+---
+---
+<div id="attModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="attModalTitle">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 id="attModalTitle" class="modal-title">Submit Attendance</h3>
+      <p class="modal-subtitle">How are you attending this session?</p>
+    </div>
+    <div class="modal-body">
+      <form id="attForm">
+        <input type="hidden" name="sessionId" id="sessionId" />
+        <div class="radio-group" style="margin-bottom:1.25rem">
+          <label class="radio-option">
+            <input type="radio" name="mode" value="luring" checked />
+            <div>
+              <div class="radio-label">In-Person</div>
+              <div class="radio-desc">Physically in the classroom</div>
+            </div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="mode" value="daring" />
+            <div>
+              <div class="radio-label">Online</div>
+              <div class="radio-desc">Remotely via virtual link</div>
+            </div>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeAttModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Confirm
+          </button>
+        </div>
+        <p class="form-error" id="attError" style="margin-top:0.75rem;text-align:center"></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  var attModal = document.getElementById('attModal');
+  var attForm = document.getElementById('attForm');
+  var attError = document.getElementById('attError');
+
+  window.openAttModal = function(sessionId) {
+    document.getElementById('sessionId').value = sessionId;
+    attModal.classList.add('active');
+  };
+
+  window.closeAttModal = function() {
+    attModal.classList.remove('active');
+    if (attError) attError.textContent = '';
+  };
+
+  attModal.addEventListener('click', function(e) {
+    if (e.target === attModal) window.closeAttModal();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && attModal.classList.contains('active')) window.closeAttModal();
+  });
+
+  attForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var submitBtn = attForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="btn-spinner"></span> Submitting\u2026';
+
+    var fd = new FormData(attForm);
+    try {
+      var res = await fetch('/api/v1/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: fd.get('sessionId'), mode: fd.get('mode') })
+      });
+      var data = await res.json();
+      if (!data.success) {
+        if (attError) attError.textContent = data.message;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirm';
+        return;
+      }
+      window.closeAttModal();
+      window.dispatchEvent(new CustomEvent('action-success', { detail: { action: 'attendance' } }));
+    } catch(e) {
+      if (attError) attError.textContent = 'Something went wrong. Please try again.';
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirm';
+    }
+  });
+</script>

@@ -1,0 +1,98 @@
+---
+export type SuccessAction = 'enrollment' | 'attendance';
+
+interface Props {
+  action?: SuccessAction;
+}
+const { action = 'enrollment' } = Astro.props;
+
+const titles: Record<SuccessAction, string> = {
+  enrollment: 'Enrollment Successful',
+  attendance: 'Attendance Submitted',
+};
+const descriptions: Record<SuccessAction, string> = {
+  enrollment: 'You\u2019ve been added to the class.',
+  attendance: 'Your attendance has been recorded.',
+};
+---
+<div id="successModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
+  <div class="modal success-modal">
+    <div class="modal-body success-body">
+      <div class="success-icon-wrap">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3 id="successModalTitle" class="success-title">{titles[action]}</h3>
+      <p class="success-desc">{descriptions[action]}</p>
+      <button type="button" class="btn btn-primary" style="width:100%" onclick="closeSuccessModal()">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  var successModal = document.getElementById('successModal');
+  var successTitle = document.getElementById('successModalTitle');
+  var successDesc = successModal.querySelector('.success-desc');
+
+  var messages = {
+    enrollment: { title: 'Enrollment Successful', desc: 'You\u2019ve been added to the class.' },
+    attendance: { title: 'Attendance Submitted', desc: 'Your attendance has been recorded.' },
+  };
+
+  window.closeSuccessModal = function() {
+    successModal.classList.remove('active');
+    window.location.reload();
+  };
+
+  successModal.addEventListener('click', function(e) {
+    if (e.target === successModal) window.closeSuccessModal();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && successModal.classList.contains('active')) window.closeSuccessModal();
+  });
+
+  window.addEventListener('action-success', function(e) {
+    var action = e.detail && e.detail.action;
+    var msg = messages[action] || messages.enrollment;
+    if (successTitle) successTitle.textContent = msg.title;
+    if (successDesc) successDesc.textContent = msg.desc;
+    successModal.classList.add('active');
+  });
+</script>
+
+<style>
+  .success-modal {
+    max-width: 340px;
+    text-align: center;
+  }
+  .success-body {
+    padding: 2rem 1.75rem 1.75rem;
+  }
+  .success-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-success-wash);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    animation: success-pop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes success-pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .success-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.35rem;
+    color: var(--color-text);
+  }
+  .success-desc {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+  }
+</style>

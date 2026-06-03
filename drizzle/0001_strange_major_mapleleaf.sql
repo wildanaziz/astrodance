@@ -1,0 +1,1 @@
+ALTER TABLE "attendance_sessions" ADD COLUMN "name" varchar(255);

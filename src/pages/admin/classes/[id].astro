@@ -1,0 +1,563 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { pageAuthGuard } from '../../../shared/middleware/authGuard';
+import { ClassService } from '../../../modules/class/application/classService';
+import { ClassRepository } from '../../../modules/class/infrastructure/classRepository';
+import { SessionService } from '../../../modules/session/application/sessionService';
+import { SessionRepository } from '../../../modules/session/infrastructure/sessionRepository';
+
+const result = await pageAuthGuard(Astro, 'admin');
+if (result instanceof Response) return result;
+const id = Astro.params.id!;
+const classService = new ClassService(new ClassRepository());
+const cls = await classService.getClassDetails(id);
+if (!cls) return Astro.redirect('/admin/classes');
+const sessionService = new SessionService(new SessionRepository());
+const sessions = await sessionService.listSessionsByClass(id);
+const students = await classService.listEnrolledStudents(id);
+---
+<Layout title={cls.name} role="admin">
+  <nav class="breadcrumb anim-fade-up" aria-label="Breadcrumb">
+    <a href="/admin/dashboard">Dashboard</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <a href="/admin/classes">Classes</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <span aria-current="page">{cls.name}</span>
+  </nav>
+
+  <div class="page-header anim-fade-up" style="animation-delay:0.05s">
+    <div class="page-header-info">
+      <div class="class-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div>
+        <h1 class="page-title">{cls.name}</h1>
+        <p class="page-subtitle">{cls.description || 'No description provided'}</p>
+      </div>
+    </div>
+    <div class="page-header-stats">
+      <div class="header-stat">
+        <span class="header-stat-value">{students.length}</span>
+        <span class="header-stat-label">Students</span>
+      </div>
+      <div class="header-stat">
+        <span class="header-stat-value">{sessions.length}</span>
+        <span class="header-stat-label">Sessions</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sections">
+    <section class="card section-card anim-fade-up" style="animation-delay:0.1s">
+      <div class="section-header">
+        <div class="section-header-left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <h2 class="section-heading">Enrolled Students</h2>
+          <span class="badge badge-muted">{students.length}</span>
+        </div>
+      </div>
+      <div class="section-body">
+        {students.length === 0 && (
+          <div class="empty-inline">
+            <p>No students enrolled yet. Use the form below to add students.</p>
+          </div>
+        )}
+        {students.length > 0 && (
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>NIM</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map(s => (
+                  <tr>
+                    <td><code class="nim-code">{s.nim || '-'}</code></td>
+                    <td><strong>{s.fullName}</strong></td>
+                    <td class="text-muted">{s.email}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div class="inline-form-divider">
+          <form id="enrollForm" class="inline-form" novalidate>
+            <div class="inline-form-field">
+              <label class="form-label" for="enrollNim">Enroll Student</label>
+              <div class="inline-form-row">
+                <input type="text" id="enrollNim" name="nim" class="form-input" placeholder="Student NIM (15 digits)" pattern="\d{15}" required inputmode="numeric" autocomplete="off" spellcheck="false" />
+                <button type="submit" class="btn btn-primary" id="enrollBtn">Enroll</button>
+              </div>
+              <p class="field-error" id="enrollFieldError"></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section-card anim-fade-up" style="animation-delay:0.16s">
+      <div class="section-header">
+        <div class="section-header-left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <h2 class="section-heading">Initiate Session</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <form id="sessionForm" class="session-form" novalidate>
+          <div class="form-row">
+            <div class="form-group form-group--grow">
+              <label class="form-label" for="sessionName">Session Name</label>
+              <input type="text" id="sessionName" name="name" class="form-input" placeholder="Topic or session name" autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group form-group--grow">
+              <label class="form-label" for="startTime">Start Time</label>
+              <input type="datetime-local" id="startTime" name="startTime" class="form-input" required />
+              <p class="field-error" id="startError"></p>
+            </div>
+            <div class="form-group form-group--grow">
+              <label class="form-label" for="endTime">End Time</label>
+              <input type="datetime-local" id="endTime" name="endTime" class="form-input" required />
+              <p class="field-error" id="endError"></p>
+            </div>
+          </div>
+          <div class="form-row form-row--end">
+            <button type="submit" class="btn btn-primary" id="sessionBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Open Session
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="card section-card anim-fade-up" style="animation-delay:0.22s">
+      <div class="section-header">
+        <div class="section-header-left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <h2 class="section-heading">Session History</h2>
+          <span class="badge badge-muted">{sessions.length}</span>
+        </div>
+      </div>
+      {sessions.length === 0 && (
+        <div class="section-body">
+          <div class="empty-inline">
+            <p>No sessions have been created yet.</p>
+          </div>
+        </div>
+      )}
+      {sessions.length > 0 && (
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map(s => (
+                <tr>
+                  <td><strong>{s.name || 'Session'}</strong></td>
+                  <td>{new Date(s.startTime).toLocaleString()}</td>
+                  <td>{new Date(s.endTime).toLocaleString()}</td>
+                  <td>
+                    <span class={s.status === 'active' ? 'badge badge-success' : 'badge badge-muted'}>
+                      {s.status === 'active' && <span class="live-dot" aria-hidden="true"></span>}
+                      {s.status}
+                    </span>
+                  </td>
+                  <td class="table-action-cell">
+                    <a href={`/admin/classes/${id}/sessions/${s.id}`} class="btn btn-ghost btn-sm">
+                      View
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  </div>
+
+  <div id="stateBox" class="state-box hidden" role="alert" aria-live="polite" data-class-id={id}></div>
+
+  <style>
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.8125rem;
+      color: var(--color-muted-light);
+    }
+    .breadcrumb a {
+      color: var(--color-muted);
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .breadcrumb a:hover { color: var(--color-accent); }
+    .breadcrumb svg { opacity: 0.4; }
+    .breadcrumb span[aria-current] {
+      color: var(--color-text);
+      font-weight: 500;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .page-header-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .class-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--color-accent-wash);
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .page-subtitle {
+      color: var(--color-muted);
+      font-size: 0.875rem;
+      margin-top: 0.3rem;
+      line-height: 1.5;
+    }
+    .page-header-stats {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .header-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.6rem 1.1rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+    }
+    .header-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      line-height: 1;
+      color: var(--color-text);
+    }
+    .header-stat-label {
+      font-size: 0.6875rem;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-top: 0.2rem;
+    }
+
+    .sections {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .section-card { overflow: hidden; }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .section-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--color-muted);
+    }
+    .section-header-left .section-heading { font-size: 1.1rem; }
+    .section-body { padding: 0; }
+
+    .empty-inline {
+      padding: 2rem 1.5rem;
+      text-align: center;
+      color: var(--color-muted);
+      font-size: 0.875rem;
+    }
+
+    .nim-code {
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--color-border);
+    }
+
+    .inline-form-divider {
+      border-top: 1px solid var(--color-border);
+      padding: 1.25rem 1.5rem;
+      background: var(--color-bg);
+    }
+    .inline-form { display: flex; flex-direction: column; gap: 0.5rem; }
+    .inline-form-field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .inline-form-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+    .inline-form-row .form-input { flex: 1; }
+
+    .session-form {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .form-row { display: flex; gap: 1rem; }
+    .form-group--grow { flex: 1; }
+    .form-row--end {
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    .table-action-cell {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .field-error {
+      color: var(--color-danger);
+      font-size: 0.75rem;
+      margin-top: 0.3rem;
+      min-height: 0;
+      transition: opacity 0.15s;
+    }
+    .field-error:empty { opacity: 0; }
+    .form-input.input-error {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 3px var(--color-danger-wash);
+    }
+
+    .state-box {
+      position: fixed;
+      top: 4.5rem;
+      right: 1.5rem;
+      z-index: 100;
+      max-width: 380px;
+      padding: 0.85rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .state-box.hidden {
+      opacity: 0;
+      transform: translateX(20px);
+      pointer-events: none;
+    }
+    .state-box.state-success {
+      background: rgba(236, 253, 245, 0.92);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #065f46;
+    }
+    .state-box.state-error {
+      background: rgba(254, 242, 242, 0.92);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--color-danger);
+    }
+    .state-box.state-warning {
+      background: rgba(255, 251, 235, 0.92);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: #92400e;
+    }
+
+    @media (max-width: 640px) {
+      .page-header { flex-direction: column; }
+      .page-header-stats { align-self: stretch; justify-content: flex-start; }
+      .form-row { flex-direction: column; gap: 0.25rem; }
+      .inline-form-row { flex-direction: column; align-items: stretch; }
+      .inline-form-row .btn { align-self: flex-start; }
+      .state-box { left: 1rem; right: 1rem; max-width: 100%; }
+    }
+  </style>
+
+  <script>
+    const stateBox = document.getElementById('stateBox');
+    const classId = stateBox.dataset.classId;
+    let stateTimer = null;
+
+    function showState(msg, isError) {
+      if (stateTimer) clearTimeout(stateTimer);
+      stateBox.textContent = msg;
+      stateBox.classList.remove('hidden', 'state-success', 'state-error', 'state-warning');
+      stateBox.classList.add(isError ? 'state-error' : 'state-success');
+      stateTimer = setTimeout(() => { stateBox.classList.add('hidden'); }, 5000);
+    }
+
+    const sessionForm = document.getElementById('sessionForm');
+    const sessionBtn = document.getElementById('sessionBtn');
+    const startTimeInput = document.getElementById('startTime');
+    const endTimeInput = document.getElementById('endTime');
+    const startError = document.getElementById('startError');
+    const endError = document.getElementById('endError');
+
+    function validateSessionForm() {
+      startError.textContent = '';
+      endError.textContent = '';
+      startTimeInput.classList.remove('input-error');
+      endTimeInput.classList.remove('input-error');
+      let valid = true;
+
+      if (!startTimeInput.value) {
+        startError.textContent = 'Start time is required';
+        startTimeInput.classList.add('input-error');
+        valid = false;
+      }
+      if (!endTimeInput.value) {
+        endError.textContent = 'End time is required';
+        endTimeInput.classList.add('input-error');
+        valid = false;
+      }
+      if (startTimeInput.value && endTimeInput.value) {
+        const start = new Date(startTimeInput.value);
+        const end = new Date(endTimeInput.value);
+        if (end <= start) {
+          endError.textContent = 'End time must be after start time';
+          endTimeInput.classList.add('input-error');
+          valid = false;
+        }
+      }
+      return valid;
+    }
+
+    [startTimeInput, endTimeInput].forEach(input => {
+      input.addEventListener('input', () => {
+        input.classList.remove('input-error');
+        const errorEl = input.id === 'startTime' ? startError : endError;
+        errorEl.textContent = '';
+      });
+    });
+
+    sessionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!validateSessionForm()) {
+        const firstError = sessionForm.querySelector('.input-error');
+        if (firstError) firstError.focus();
+        return;
+      }
+
+      sessionBtn.disabled = true;
+      const originalHTML = sessionBtn.innerHTML;
+      sessionBtn.innerHTML = '<span class="btn-spinner"></span> Opening\u2026';
+
+      const fd = new FormData(sessionForm);
+      const res = await fetch(`/api/v1/classes/${classId}/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: fd.get('name'), startTime: fd.get('startTime'), endTime: fd.get('endTime') })
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        showState(data.message || 'Failed to open session.', true);
+        sessionBtn.disabled = false;
+        sessionBtn.innerHTML = originalHTML;
+        return;
+      }
+
+      showState('Session opened successfully.');
+      setTimeout(() => { window.location.reload(); }, 800);
+    });
+
+    const enrollForm = document.getElementById('enrollForm');
+    const enrollBtn = document.getElementById('enrollBtn');
+    const enrollNimInput = document.getElementById('enrollNim');
+    const enrollFieldError = document.getElementById('enrollFieldError');
+
+    function validateEnrollForm() {
+      enrollFieldError.textContent = '';
+      enrollNimInput.classList.remove('input-error');
+
+      const nim = enrollNimInput.value.trim();
+      if (!nim) {
+        enrollFieldError.textContent = 'Student NIM is required';
+        enrollNimInput.classList.add('input-error');
+        return false;
+      }
+      if (!/^\d{15}$/.test(nim)) {
+        enrollFieldError.textContent = 'NIM must be exactly 15 digits';
+        enrollNimInput.classList.add('input-error');
+        return false;
+      }
+      return true;
+    }
+
+    enrollNimInput.addEventListener('input', () => {
+      enrollNimInput.classList.remove('input-error');
+      enrollFieldError.textContent = '';
+    });
+
+    enrollForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!validateEnrollForm()) {
+        enrollNimInput.focus();
+        return;
+      }
+
+      enrollBtn.disabled = true;
+      const originalText = enrollBtn.textContent;
+      enrollBtn.innerHTML = '<span class="btn-spinner"></span>';
+
+      const fd = new FormData(enrollForm);
+      const res = await fetch(`/api/v1/classes/${classId}/enroll`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nim: fd.get('nim') })
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        showState(data.message || 'Failed to enroll student.', true);
+        enrollBtn.disabled = false;
+        enrollBtn.textContent = originalText;
+        return;
+      }
+
+      showState('Student enrolled successfully.');
+      setTimeout(() => { window.location.reload(); }, 800);
+    });
+  </script>
+</Layout>

@@ -1,0 +1,28 @@
+# Environment secrets
+.env
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Astro
+.astro/
+
+# Documentation & plans
+docs/
+
+# OpenCode configuration
+opencode/
+
+# Dev logs & artifacts
+Session Redesain UI.md
+*.log
+
+# Package manager (Bun is the primary lockfile)
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db

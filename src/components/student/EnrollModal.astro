@@ -1,0 +1,145 @@
+---
+interface Props {
+  availableClasses: { id: string; name: string; description: string | null }[];
+  enrolledIds: string[];
+}
+const { availableClasses, enrolledIds } = Astro.props;
+---
+<div id="enrollModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="enrollModalTitle" data-enrolled-ids={JSON.stringify(enrolledIds)}>
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3 id="enrollModalTitle" class="modal-title">Enroll in a Class</h3>
+      <p class="modal-subtitle">Browse available classes to join</p>
+    </div>
+    <div class="modal-body">
+      <div id="enrollList" class="enroll-list">
+        {availableClasses.length === 0 ? (
+          <p class="enroll-empty">No classes available right now.</p>
+        ) : (
+          <div class="enroll-grid">
+            {availableClasses.map(c => {
+              const enrolled = enrolledIds.includes(c.id);
+              return (
+                <div class="enroll-item">
+                  <div class="enroll-item-info">
+                    <div class="enroll-item-name">{c.name}</div>
+                    <div class="enroll-item-desc">{c.description || ''}</div>
+                  </div>
+                  {enrolled ? (
+                    <span class="badge badge-success">Enrolled</span>
+                  ) : (
+                    <button class="btn btn-primary btn-sm" onclick={`enrollClass('${c.id}', this)`}>Enroll</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div class="modal-actions" style="margin-top:1.25rem">
+        <button type="button" class="btn btn-secondary" style="width:100%" onclick="closeEnrollModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  var enrollModal = document.getElementById('enrollModal');
+  var enrolledIds = JSON.parse(enrollModal.getAttribute('data-enrolled-ids') || '[]');
+  var enrolledSet = new Set(enrolledIds);
+
+  window.openEnrollModal = function() {
+    enrollModal.classList.add('active');
+  };
+
+  window.closeEnrollModal = function() {
+    enrollModal.classList.remove('active');
+  };
+
+  enrollModal.addEventListener('click', function(e) {
+    if (e.target === enrollModal) closeEnrollModal();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && enrollModal.classList.contains('active')) closeEnrollModal();
+  });
+
+  window.enrollClass = async function(classId, btn) {
+    btn.disabled = true;
+    var originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-spinner"></span>';
+    try {
+      var res = await fetch('/api/v1/student/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: classId })
+      });
+      var data = await res.json();
+      if (data.success) {
+        window.closeEnrollModal();
+        window.dispatchEvent(new CustomEvent('action-success', { detail: { action: 'enrollment' } }));
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        alert(data.message || 'Enrollment failed');
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+      alert('Enrollment failed. Please try again.');
+    }
+  };
+</script>
+
+<style is:global>
+  .enroll-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 80px;
+  }
+  .enroll-empty {
+    color: var(--color-muted-light);
+    text-align: center;
+    font-size: 0.875rem;
+  }
+  .enroll-grid {
+    display: grid;
+    gap: 0.5rem;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+  .enroll-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+  .enroll-item:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-bg);
+  }
+  .enroll-item-info {
+    min-width: 0;
+    flex: 1;
+  }
+  .enroll-item-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.15rem;
+    color: var(--color-accent);
+  }
+  .enroll-item-desc {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

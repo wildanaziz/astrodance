@@ -1,0 +1,33 @@
+{
+  "name": "university-attendance-system",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "astro preview",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "test": "bun test",
+    "db:seed": "bun run src/shared/config/seed.ts",
+    "lint": "tsc --noEmit && echo 'Type check passed'"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.0.0",
+    "argon2": "^0.41.0",
+    "astro": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.40.0",
+    "jose": "^6.0.0",
+    "pg": "^8.14.0",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@types/pg": "^8.11.0",
+    "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,295 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Login">
+  <div class="auth-wrapper">
+    <div class="auth-bg" aria-hidden="true">
+      <div class="auth-bg-shape auth-bg-shape--1"></div>
+      <div class="auth-bg-shape auth-bg-shape--2"></div>
+      <div class="auth-bg-shape auth-bg-shape--3"></div>
+    </div>
+
+    <div class="auth-card anim-scale-in">
+      <div class="auth-header">
+        <h1 class="auth-title" style="color: var(--color-accent);">Welcome back</h1>
+        <p class="auth-subtitle">Sign in to your account to continue</p>
+      </div>
+
+      <div id="stateBox" class="state-box hidden" role="alert" aria-live="polite"></div>
+
+      <form id="loginForm" class="auth-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" name="email" class="form-input" placeholder="you@university.ac.id" required autocomplete="email" spellcheck="false" />
+          <p class="field-error" id="emailError"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" name="password" class="form-input" placeholder="Enter your password" required autocomplete="current-password" />
+          <p class="field-error" id="passwordError"></p>
+        </div>
+        <button type="submit" class="btn btn-primary auth-submit" id="submitBtn">Sign In</button>
+      </form>
+
+      <div class="auth-footer">
+        <span>Don't have an account?</span>
+        <a href="/register" class="auth-link">Register</a>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .auth-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 8rem);
+      padding: 2rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .auth-bg-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+    }
+    .auth-bg-shape--1 {
+      width: 500px;
+      height: 500px;
+      background: var(--color-accent-wash);
+      top: -15%;
+      right: -10%;
+    }
+    .auth-bg-shape--2 {
+      width: 400px;
+      height: 400px;
+      background: var(--color-success-wash);
+      bottom: -10%;
+      left: -8%;
+    }
+    .auth-bg-shape--3 {
+      width: 300px;
+      height: 300px;
+      background: var(--color-warning-wash);
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .auth-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl), 0 0 0 1px rgba(0,0,0,0.02);
+      padding: 2.25rem 2rem 2rem;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+    .auth-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-lg);
+      background: var(--color-accent-wash);
+      color: var(--color-accent);
+      margin-bottom: 1rem;
+    }
+    .auth-title {
+      font-family: var(--font-display);
+      font-size: 1.65rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .auth-subtitle {
+      color: var(--color-muted);
+      font-size: 0.875rem;
+      margin-top: 0.35rem;
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .auth-submit {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.7rem 1.35rem;
+      font-size: 0.9375rem;
+    }
+    .auth-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--color-border);
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+    }
+    .auth-link {
+      color: var(--color-accent);
+      font-weight: 600;
+      margin-left: 0.25rem;
+      transition: color 0.15s;
+    }
+    .auth-link:hover { color: var(--color-accent-hover); }
+
+    .state-box {
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .state-box.hidden {
+      display: none;
+    }
+    .state-box--error {
+      background: var(--color-danger-wash);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      color: var(--color-danger);
+    }
+    .state-box--success {
+      background: var(--color-success-wash);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      color: #065f46;
+    }
+    .state-box--warning {
+      background: var(--color-warning-wash);
+      border: 1px solid rgba(245, 158, 11, 0.15);
+      color: #92400e;
+    }
+
+    .field-error {
+      color: var(--color-danger);
+      font-size: 0.75rem;
+      margin-top: 0.3rem;
+      min-height: 0;
+      transition: opacity 0.15s;
+    }
+    .field-error:empty { opacity: 0; }
+
+    .form-input.input-error {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 3px var(--color-danger-wash);
+    }
+
+    @media (max-width: 640px) {
+      .auth-card { padding: 1.75rem 1.5rem 1.5rem; border-radius: var(--radius-lg); }
+      .auth-title { font-size: 1.4rem; }
+    }
+  </style>
+
+  <script>
+    const form = document.getElementById('loginForm') as HTMLFormElement;
+    const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+    const stateBox = document.getElementById('stateBox')!;
+    const emailInput = document.getElementById('loginEmail') as HTMLInputElement;
+    const passwordInput = document.getElementById('loginPassword') as HTMLInputElement;
+    const emailError = document.getElementById('emailError')!;
+    const passwordError = document.getElementById('passwordError')!;
+
+    function showState(msg: string, type: 'error' | 'success' | 'warning' = 'error') {
+      stateBox.textContent = msg;
+      stateBox.className = `state-box state-box--${type}`;
+      if (type !== 'error') {
+        setTimeout(() => { stateBox.className = 'state-box hidden'; }, 5000);
+      }
+    }
+
+    function clearFieldErrors() {
+      emailError.textContent = '';
+      passwordError.textContent = '';
+      emailInput.classList.remove('input-error');
+      passwordInput.classList.remove('input-error');
+    }
+
+    function validateFields(): boolean {
+      clearFieldErrors();
+      let valid = true;
+      if (!emailInput.value.trim()) {
+        emailError.textContent = 'Email is required';
+        emailInput.classList.add('input-error');
+        valid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
+        emailError.textContent = 'Enter a valid email address';
+        emailInput.classList.add('input-error');
+        valid = false;
+      }
+      if (!passwordInput.value) {
+        passwordError.textContent = 'Password is required';
+        passwordInput.classList.add('input-error');
+        valid = false;
+      }
+      return valid;
+    }
+
+    [emailInput, passwordInput].forEach(input => {
+      input.addEventListener('input', () => {
+        input.classList.remove('input-error');
+        const errorEl = input.id === 'loginEmail' ? emailError : passwordError;
+        errorEl.textContent = '';
+      });
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      stateBox.className = 'state-box hidden';
+
+      if (!validateFields()) {
+        const firstError = form.querySelector('.input-error') as HTMLElement;
+        firstError?.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      const originalText = submitBtn.textContent;
+      submitBtn.innerHTML = '<span class="btn-spinner"></span> Signing in…';
+
+      const fd = new FormData(form);
+      const csrf = document.cookie.split('; ').find(r => r.startsWith('csrf='))?.split('=')[1];
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf || '' },
+        body: JSON.stringify({ email: fd.get('email'), password: fd.get('password') })
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        if (res.status === 429) {
+          showState('Too many login attempts. Please wait 15 minutes before trying again.', 'warning');
+        } else {
+          showState(data.message || 'Login failed. Please try again.', 'error');
+        }
+        if (res.status == 401) {
+          showState('Invalid email or password.', 'error');
+        }
+        return;
+      }
+      showState('Login successful. Redirecting…', 'success');
+      setTimeout(() => {
+        window.location.href = data.data.role === 'admin' ? '/admin/dashboard' : '/student/dashboard';
+      }, 400);
+    });
+  </script>
+</Layout>
